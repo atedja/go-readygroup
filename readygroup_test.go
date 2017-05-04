@@ -29,7 +29,7 @@ func ExampleReadyGroup() {
 	rg.Add(10)
 	for i := 0; i < 10; i++ {
 		go func() {
-			rg.Ready() // blocks here until Go gets unblocked.
+			rg.Ready() // blocks here until Go() gets unblocked.
 			// do something...
 		}()
 	}

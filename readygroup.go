@@ -3,6 +3,7 @@ package readygroup
 // ReadyGroup is used in opposite situation to sync.WaitGroup.
 // sync.WaitGroup is typically used to wait for goroutines to finish their executions,
 // while ReadyGroup is used to make all goroutines wait before they can begin execution.
+// It guarantees to block all goroutines until they are ready.
 type ReadyGroup struct {
 	groups chan struct{}
 	done   chan struct{}
