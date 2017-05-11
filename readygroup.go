@@ -31,8 +31,5 @@ func (self *ReadyGroup) Go() {
 		counter++
 	}
 
-	for counter > 0 {
-		self.done <- struct{}{}
-		counter--
-	}
+	close(self.done)
 }
