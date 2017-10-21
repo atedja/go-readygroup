@@ -90,7 +90,7 @@ func TestReadyGroupMultipleAdds(t *testing.T) {
 }
 
 func ExampleReadyGroup() {
-	var rg ReadyGroup
+	rg := readygroup.New()
 	rg.Add(10)
 	for i := 0; i < 10; i++ {
 		go func() {
