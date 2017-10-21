@@ -1,35 +1,60 @@
 package readygroup
 
+import (
+	"sync/atomic"
+)
+
 // ReadyGroup is used in opposite situation to sync.WaitGroup.
-// sync.WaitGroup is typically used to wait for goroutines to finish their executions,
-// while ReadyGroup is used to make all goroutines wait before they can begin execution.
-// It guarantees to block all goroutines until they are ready.
+// ReadyGroup is used to make all goroutines wait before they can begin execution.
+// It guarantees to block all goroutines until all are ready.
 type ReadyGroup struct {
-	groups chan struct{}
-	done   chan struct{}
-	total  uint
+	done        chan struct{}
+	ready       chan struct{}
+	readyTotal  uint64
+	total       uint64
+	waitRunning uint64
 }
 
-// Adds delta, which cannot be negative, to the ReadyGroup counter.
-func (self *ReadyGroup) Add(delta uint) {
-	self.total = delta
-	self.groups = make(chan struct{}, delta)
-	self.done = make(chan struct{}, delta)
+func New() *ReadyGroup {
+	rg := &ReadyGroup{}
+	rg.done = make(chan struct{})
+	rg.ready = make(chan struct{})
+	rg.readyTotal = 0
+	rg.total = 0
+	rg.waitRunning = 0
+	return rg
 }
 
-// Ready decrements the ReadyGroup counter, and blocks until Go gets unblocked.
+// Add adds the total number of goroutines to wait, which cannot be negative, to the ReadyGroup counter.
+func (self *ReadyGroup) Add(total uint64) {
+	atomic.AddUint64(&self.total, total)
+	go self.wait()
+}
+
+// Ready decrements the ReadyGroup counter, and blocks until counter reaches 0.
 func (self *ReadyGroup) Ready() {
-	self.groups <- struct{}{}
+	self.ready <- struct{}{}
 	<-self.done
 }
 
-// Go blocks until the counter reaches 0.
-func (self *ReadyGroup) Go() {
-	var counter uint = 0
-	for counter < self.total {
-		<-self.groups
-		counter++
+func (self *ReadyGroup) wait() {
+	// Check if there's already a wait() running
+	if atomic.CompareAndSwapUint64(&self.waitRunning, 1, 1) {
+		return
+	}
+	atomic.AddUint64(&self.waitRunning, 1)
+
+	for range self.ready {
+		self.readyTotal++
+		atomic.AddUint64(&self.total, ^uint64(0))
+		if atomic.CompareAndSwapUint64(&self.total, 0, 0) {
+			for i := uint64(0); i < self.readyTotal; i++ {
+				self.done <- struct{}{}
+			}
+			self.readyTotal = 0
+			break
+		}
 	}
 
-	close(self.done)
+	atomic.AddUint64(&self.waitRunning, ^uint64(0))
 }
