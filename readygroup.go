@@ -4,9 +4,9 @@ import (
 	"sync/atomic"
 )
 
-// ReadyGroup is used in opposite situation to sync.WaitGroup.
-// ReadyGroup is used to make all goroutines wait before they can begin execution.
-// It guarantees to block all goroutines until all are ready.
+// ReadyGroup is used in opposite situations to sync.WaitGroup.
+// It blocks all goroutines until all are ready, then unblocks them all
+// in no particular order.
 type ReadyGroup struct {
 	done        chan struct{}
 	ready       chan struct{}
