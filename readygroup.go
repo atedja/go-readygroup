@@ -48,10 +48,9 @@ func (self *ReadyGroup) wait() {
 		self.readyTotal++
 		atomic.AddUint64(&self.total, ^uint64(0))
 		if atomic.CompareAndSwapUint64(&self.total, 0, 0) {
-			for i := uint64(0); i < self.readyTotal; i++ {
+			for ; self.readyTotal > 0; self.readyTotal-- {
 				self.done <- struct{}{}
 			}
-			self.readyTotal = 0
 			break
 		}
 	}
